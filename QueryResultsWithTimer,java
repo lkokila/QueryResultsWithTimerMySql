@@ -1,0 +1,183 @@
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
+
+
+public class QueryResultsWithTimer {
+    // JDBC driver name and database URL
+    static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
+    static final String DB_URL = "jdbc:mysql://localhost/DBName";
+
+    //  Database credentials
+    static final String USER = "root";
+    static final String PASS = "root";
+    static final int delay = 100000;
+    static final int period = 600000;
+
+    public static void main(String[] args) {
+        Connection conn = null;
+        Statement stmt = null;
+
+        try {
+            Class.forName(JDBC_DRIVER);
+
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                public void run() {
+
+                    FileWriter fileWriter = null;
+                    BufferedWriter writer = null;
+                    ResultSet rs = null;
+
+                    try {
+
+
+                        try {
+                            fileWriter = new FileWriter("QueryResults_" +
+                                    new SimpleDateFormat("yyyy-MM-dd:HH-mm-ss").format(new Date()).toString());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        writer = new BufferedWriter(fileWriter);
+
+
+                        //First Query
+                        String sql = "select count(*) from IDN_AUTH_SESSION_STORE;";
+
+                        sql = "SELECT TABLE_NAME, table_rows, data_length, index_length,  " +
+                                "round(((data_length + index_length) / 1024 / 1024),2) \"Size in MB\" " +
+                                "FROM information_schema.TABLES WHERE table_schema = \"DBName\" " +
+                                "ORDER BY (data_length + index_length) DESC LIMIT 1;";
+
+                        try {
+                            rs = DriverManager.getConnection(DB_URL, USER, PASS).createStatement().executeQuery(sql);
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+
+                        try {
+
+                            try {
+                                writer.write("\n" + "Result for " + sql + " : " + "\n");
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                            while (rs.next()) {
+                                String TABLE_NAME = rs.getString("TABLE_NAME");
+                                BigDecimal table_rows = rs.getBigDecimal("table_rows");
+                                int index_length = rs.getInt("index_length");
+                                int Size_in_MB = rs.getInt("Size in MB");
+
+                                System.out.println("TABLE_NAME : " + TABLE_NAME);
+                                System.out.println("table_rows : " + table_rows);
+                                System.out.println("index_length : " + index_length);
+                                System.out.println("Size_in_MB : " + Size_in_MB);
+
+                                try {
+                                    writer.write("TABLE_NAME : " + TABLE_NAME + "\n");
+                                    writer.write("table_rows : " + table_rows + "\n");
+                                    writer.write("index_length : " + table_rows + "\n");
+                                    writer.write("Size_in_MB : " + Size_in_MB + "\n");
+                                    writer.write("---------------------------------------" + "\n");
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+
+
+                        //Second Query
+
+                        sql = "SHOW PROCESSLIST;";
+
+
+                        try {
+                            rs = DriverManager.getConnection(DB_URL, USER, PASS).createStatement().executeQuery(sql);
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+
+                        try {
+
+                            try {
+                                writer.write("\n" + "Result for " + sql + " : " + "\n");
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                            while (rs.next()) {
+
+                                int Id = rs.getInt("Id");
+                                String db = rs.getString("db");
+                                String Time = rs.getString("Time");
+                                String State = rs.getString("State");
+                                String Info = rs.getString("Info");
+
+                                System.out.println("Id : " + Id + "\n");
+                                System.out.println("db : " + db + "\n");
+                                System.out.println("Time : " + Time + "\n");
+                                System.out.println("State : " + State + "\n");
+                                System.out.println("Info : " + Info + "\n");
+
+                                try {
+                                    writer.write("Id : " + Id + "\n");
+                                    writer.write("db : " + db + "\n");
+                                    writer.write("Time : " + Time + "\n");
+                                    writer.write("State : " + State + "\n");
+                                    writer.write("Info : " + Info + "\n");
+                                    writer.write("---------------------------------------" + "\n");
+
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+
+                    } finally {
+                        try {
+                            writer.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        try {
+                            rs.close();
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }, delay, period);
+
+        } catch (Exception e) {
+            //Handle errors for Class.forName
+            e.printStackTrace();
+        } finally {
+            //finally block used to close resources
+            try {
+                if (stmt != null)
+                    conn.close();
+            } catch (SQLException se) {
+            }// do nothing
+            try {
+                if (conn != null)
+                    conn.close();
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }//end finally try
+        }//end try
+    }//end main
+}//end JDBC
