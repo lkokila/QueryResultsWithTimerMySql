@@ -1,0 +1,55 @@
+import java.sql.*;
+
+public class testMySqlSession {
+
+    static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";
+    static final String DB_URL = "jdbc:mysql://localhost/SessionVariableTestDB?";
+
+    //  Database credentials
+    static final String USER = "root";
+    static final String PASS = "root";
+
+    public static void main(String[] args) throws SQLException {
+
+        ResultSet rs = null;
+
+        //String sql = "SELECT * FROM TESTDB;";
+        String sqlSessionVariableCheck = "SHOW VARIABLES WHERE Variable_name LIKE 'character\\_set\\_%' OR Variable_name LIKE 'collation%';";
+        String sqlInsertEmoji = "INSERT INTO TEST_EMOJI VALUES ('\uD83D\uDE1C');";
+        String sqlSelectEmoji = "SELECT * FROM TEST_EMOJI;";
+
+        try {
+
+            Connection conn = DriverManager.getConnection(DB_URL, USER, PASS);
+            rs = conn.createStatement().executeQuery(sqlSessionVariableCheck);
+
+            while (rs.next()) {
+
+                String Variable_name = rs.getString("Variable_name");
+                String Value = rs.getString("Value");
+                System.out.println(Variable_name + " : " + Value);
+            }
+
+            //rs = DriverManager.getConnection(DB_URL, USER, PASS).createStatement().executeQuery(sqlInsertEmoji);
+
+
+            PreparedStatement preparedStmt = DriverManager.getConnection(DB_URL, USER, PASS).prepareStatement(sqlInsertEmoji);
+
+            preparedStmt.execute();
+
+            rs = conn.createStatement().executeQuery(sqlSelectEmoji);
+
+            while (rs.next()) {
+
+                String TEST_EMOJI_VALUE = rs.getString("TEST_EMOJI_VALUE");
+                System.out.println(TEST_EMOJI_VALUE);
+            }
+
+            conn.close();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+}
